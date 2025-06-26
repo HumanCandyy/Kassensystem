@@ -29,6 +29,26 @@ public class Main {
         HashMap<String, Integer> itemCounts = new HashMap<>();
         HashMap<String, Integer> itemPrices = new HashMap<>();
 
+        // Create a login panel at the top center
+        JPanel loginPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JLabel userLabel = new JLabel("Benutzer:");
+        JTextField userField = new JTextField(10);
+        JLabel passLabel = new JLabel("Passwort:");
+        JPasswordField passField = new JPasswordField(10);
+        JButton loginButton = new JButton("Login");
+
+        userLabel.setFont(largeFont);
+        userField.setFont(largeFont);
+        passLabel.setFont(largeFont);
+        passField.setFont(largeFont);
+        loginButton.setFont(largeFont);
+
+        loginPanel.add(userLabel);
+        loginPanel.add(userField);
+        loginPanel.add(passLabel);
+        loginPanel.add(passField);
+        loginPanel.add(loginButton);
+
         // Update button labels with names and prices
         String[] buttonLabels = {"Cola - 1€", "Wasser - 1€", "Weizen - 1€", "Pils - 1€", "Fanta - 1€"};
         for (int i = 0; i < buttonLabels.length; i++) {
@@ -101,6 +121,7 @@ public class Main {
 
         // Create a main panel with BorderLayout
         JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(loginPanel, BorderLayout.NORTH); // Add login panel at the top
         mainPanel.add(buttonPanel, BorderLayout.CENTER); // Center the button panel for resizing
 
         // Add the selected items label and output label
