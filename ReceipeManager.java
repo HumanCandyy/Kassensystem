@@ -1,6 +1,8 @@
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JFileChooser;
@@ -32,6 +34,12 @@ public class ReceipeManager {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Exportiere Abrechnung als TXT");
         fileChooser.setFileFilter(new FileNameExtensionFilter("Textdateien (*.txt)", "txt"));
+
+        // Automatisch vorgeschlagener Dateiname mit aktuellem Datum und Uhrzeit
+        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String defaultFileName = "Abrechnung_" + dateStr + ".txt";
+        fileChooser.setSelectedFile(new java.io.File(defaultFileName));
+
         int userSelection = fileChooser.showSaveDialog(null);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             filePath = fileChooser.getSelectedFile().getAbsolutePath();
