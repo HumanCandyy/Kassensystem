@@ -85,7 +85,8 @@ class LoginPanel extends JPanel {
         add(loginButton);
         add(loggedInUserLabel);
 
-        loginButton.addActionListener(e -> {
+        // Login-Logik in eigene Methode
+        Runnable doLogin = () -> {
             String username = userField.getText();
             String password = new String(passField.getPassword());
             boolean found = false;
@@ -112,7 +113,11 @@ class LoginPanel extends JPanel {
                 isLoggedIn[0] = false;
                 isAdmin[0] = false;
             }
-        });
+        };
+
+        loginButton.addActionListener(e -> doLogin.run());
+        userField.addActionListener(e -> doLogin.run());
+        passField.addActionListener(e -> doLogin.run());
     }
 
     public void setOutputPanel(OutputPanel outputPanel) {
