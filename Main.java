@@ -36,18 +36,44 @@ public class Main {
         JLabel passLabel = new JLabel("Passwort:");
         JPasswordField passField = new JPasswordField(10);
         JButton loginButton = new JButton("Login");
+        JLabel loggedInUserLabel = new JLabel("Nicht eingeloggt"); // Label to display username
 
         userLabel.setFont(largeFont);
         userField.setFont(largeFont);
         passLabel.setFont(largeFont);
         passField.setFont(largeFont);
         loginButton.setFont(largeFont);
+        loggedInUserLabel.setFont(largeFont);
 
         loginPanel.add(userLabel);
         loginPanel.add(userField);
         loginPanel.add(passLabel);
         loginPanel.add(passField);
         loginPanel.add(loginButton);
+        loginPanel.add(loggedInUserLabel); // Add the username display label
+
+        // Create a flag to track login status and role
+        final boolean[] isLoggedIn = {false};
+        final boolean[] isAdmin = {false};
+
+        // Add action listener to the login button
+        loginButton.addActionListener(e -> {
+            String username = userField.getText();
+            String password = new String(passField.getPassword());
+            if ("Kassierer".equals(username) && "12345".equals(password)) {
+                loggedInUserLabel.setText("Eingeloggt als: " + username);
+                isLoggedIn[0] = true; // Set login status to true
+                isAdmin[0] = false; // Not admin
+            } else if ("Admin".equals(username) && "geheim".equals(password)) {
+                loggedInUserLabel.setText("Eingeloggt als: Admin");
+                isLoggedIn[0] = true; // Set login status to true
+                isAdmin[0] = true; // Admin role
+            } else {
+                loggedInUserLabel.setText("Login fehlgeschlagen");
+                isLoggedIn[0] = false; // Set login status to false
+                isAdmin[0] = false; // Not admin
+            }
+        });
 
         // Update button labels with names and prices
         String[] buttonLabels = {"Cola - 1€", "Wasser - 1€", "Weizen - 1€", "Pils - 1€", "Fanta - 1€"};
@@ -70,19 +96,23 @@ public class Main {
 
             // Add action listeners for "+" and "-" buttons
             plusButton.addActionListener(e -> {
-                int currentCount = Integer.parseInt(counterLabel.getText());
-                counterLabel.setText(String.valueOf(currentCount + 1));
-                itemCounts.put(label, currentCount + 1);
-                updateSelectedItemsLabel(selectedItemsLabel, itemCounts);
-                updateTotalSum(outputLabel, itemCounts, itemPrices);
-            });
-            minusButton.addActionListener(e -> {
-                int currentCount = Integer.parseInt(counterLabel.getText());
-                if (currentCount > 0) {
-                    counterLabel.setText(String.valueOf(currentCount - 1));
-                    itemCounts.put(label, currentCount - 1);
+                if (isLoggedIn[0]) { // Check login status
+                    int currentCount = Integer.parseInt(counterLabel.getText());
+                    counterLabel.setText(String.valueOf(currentCount + 1));
+                    itemCounts.put(label, currentCount + 1);
                     updateSelectedItemsLabel(selectedItemsLabel, itemCounts);
                     updateTotalSum(outputLabel, itemCounts, itemPrices);
+                }
+            });
+            minusButton.addActionListener(e -> {
+                if (isLoggedIn[0]) { // Check login status
+                    int currentCount = Integer.parseInt(counterLabel.getText());
+                    if (currentCount > 0) {
+                        counterLabel.setText(String.valueOf(currentCount - 1));
+                        itemCounts.put(label, currentCount - 1);
+                        updateSelectedItemsLabel(selectedItemsLabel, itemCounts);
+                        updateTotalSum(outputLabel, itemCounts, itemPrices);
+                    }
                 }
             });
 
@@ -100,20 +130,22 @@ public class Main {
         JButton resetButton = new JButton("Bezahlen");
         resetButton.setFont(largeFont);
         resetButton.addActionListener(e -> {
-            itemCounts.keySet().forEach(key -> itemCounts.put(key, 0));
-            buttonPanel.getComponents();
-            for (Component component : buttonPanel.getComponents()) {
-                if (component instanceof JPanel) {
-                    JPanel rowPanel = (JPanel) component;
-                    for (Component subComponent : rowPanel.getComponents()) {
-                        if (subComponent instanceof JLabel) {
-                            ((JLabel) subComponent).setText("0");
+            if (isLoggedIn[0]) { // Check login status
+                itemCounts.keySet().forEach(key -> itemCounts.put(key, 0));
+                buttonPanel.getComponents();
+                for (Component component : buttonPanel.getComponents()) {
+                    if (component instanceof JPanel) {
+                        JPanel rowPanel = (JPanel) component;
+                        for (Component subComponent : rowPanel.getComponents()) {
+                            if (subComponent instanceof JLabel) {
+                                ((JLabel) subComponent).setText("0");
+                            }
                         }
                     }
                 }
+                updateSelectedItemsLabel(selectedItemsLabel, itemCounts);
+                updateTotalSum(outputLabel, itemCounts, itemPrices);
             }
-            updateSelectedItemsLabel(selectedItemsLabel, itemCounts);
-            updateTotalSum(outputLabel, itemCounts, itemPrices);
         });
 
         gbc.gridy = buttonLabels.length; // Place Reset button below the last row
