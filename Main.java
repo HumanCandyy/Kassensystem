@@ -115,7 +115,7 @@ class OutputPanel extends JPanel {
         setBorder(BorderFactory.createTitledBorder("Beleg"));
         receiptArea = new JTextArea(12, 28);
         receiptArea.setEditable(false);
-        receiptArea.setFont(largeFont);
+        receiptArea.setFont(new Font("Monospaced", Font.BOLD, largeFont.getSize()));
         receiptArea.setLineWrap(false);
         receiptArea.setWrapStyleWord(false);
         receiptArea.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
@@ -163,10 +163,10 @@ class OutputPanel extends JPanel {
         for (String name : countMap.keySet()) {
             int count = countMap.get(name);
             double price = priceMap.get(name);
-            sb.append(String.format("%2dx %-15s %6.2f€\n", count, name, count * price));
+            sb.append(String.format("%2dx %-18s %8.2f€\n", count, name, count * price));
         }
         sb.append("-----------------------------\n");
-        sb.append(String.format("Gesamt:         %6.2f€", currentReceipe.getTotalPrice()));
+        sb.append(String.format("Gesamt:%22.2f€", currentReceipe.getTotalPrice()));
         receiptArea.setText(sb.toString());
     }
 }
