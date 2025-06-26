@@ -1,0 +1,75 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
+public class ReceipeManager {
+    private static ReceipeManager instance;
+    private final List<Receipe> receipes;
+
+    private ReceipeManager() {
+        receipes = new ArrayList<>();
+    }
+
+    public static ReceipeManager getInstance() {
+        if (instance == null) {
+            instance = new ReceipeManager();
+        }
+        return instance;
+    }
+
+    public void addReceipe(Receipe receipe) {
+        if (receipe != null) {
+            receipes.add(receipe);
+        }
+    }
+
+    public void print() {
+        String filePath = null;
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Exportiere Abrechnung als TXT");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Textdateien (*.txt)", "txt"));
+        int userSelection = fileChooser.showSaveDialog(null);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            filePath = fileChooser.getSelectedFile().getAbsolutePath();
+            if (!filePath.toLowerCase().endsWith(".txt")) {
+                filePath += ".txt";
+            }
+        } else {
+            return; // Abbrechen
+        }
+
+        double totalSum = 0.0;
+        int count = receipes.size();
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            for (Receipe receipe : receipes) {
+                writer.write("Beleg-ID: " + receipe.getID());
+                writer.newLine();
+                writer.write("Datum/Zeit: " + receipe.getDateTime());
+                writer.newLine();
+                writer.write("Kassierer: " + (receipe.getCashier() != null ? receipe.getCashier() : "Unbekannt"));
+                writer.newLine();
+                writer.write("Artikel:");
+                writer.newLine();
+                for (Article article : receipe.getArticleList()) {
+                    writer.write(" - " + article.getName() + ": " + String.format("%.2f", article.getPrice()) + " EUR");
+                    writer.newLine();
+                }
+                writer.write("Gesamtpreis: " + String.format("%.2f", receipe.getTotalPrice()) + " EUR");
+                writer.newLine();
+                writer.write("--------------------------------------------------");
+                writer.newLine();
+                totalSum += receipe.getTotalPrice();
+            }
+            writer.write("Anzahl Belege: " + count);
+            writer.newLine();
+            writer.write("Gesamtsumme: " + String.format("%.2f", totalSum) + " EUR");
+            writer.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
