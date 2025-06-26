@@ -6,37 +6,43 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("Hallo Ubuntu!");
         JFrame frame = new JFrame("Einfaches Fenster");
-        frame.setSize(600, 400); // Increase initial window size
+        frame.setSize(600, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // Create a panel for the buttons using GridBagLayout for better scaling
-        JPanel buttonPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.BOTH; // Allow components to grow in both directions
-        gbc.weightx = 1.0; // Horizontal scaling
-        gbc.weighty = 1.0; // Vertical scaling
-        gbc.insets = new Insets(10, 10, 10, 10); // Increase padding
-
-        // Set a larger font for all components
         Font largeFont = new Font("Arial", Font.PLAIN, 18);
 
-        // Create labels for selected items and total sum
-        JLabel selectedItemsLabel = new JLabel("Auswahl: ", SwingConstants.RIGHT);
-        JLabel outputLabel = new JLabel("Gesamt: 0€", SwingConstants.RIGHT);
-        selectedItemsLabel.setFont(largeFont);
-        outputLabel.setFont(largeFont);
+        LoginPanel loginPanel = new LoginPanel(largeFont);
+        OutputPanel outputPanel = new OutputPanel(largeFont);
+        ButtonPanel buttonPanel = new ButtonPanel(largeFont, outputPanel.getSelectedItemsLabel(), outputPanel.getOutputLabel(), loginPanel.getIsLoggedIn());
 
-        HashMap<String, Integer> itemCounts = new HashMap<>();
-        HashMap<String, Integer> itemPrices = new HashMap<>();
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(loginPanel, BorderLayout.NORTH);
+        mainPanel.add(buttonPanel, BorderLayout.CENTER);
+        mainPanel.add(outputPanel, BorderLayout.SOUTH);
 
-        // Create a login panel at the top center
-        JPanel loginPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        frame.add(mainPanel);
+        frame.setVisible(true);
+    }
+}
+
+class LoginPanel extends JPanel {
+    private final JTextField userField;
+    private final JPasswordField passField;
+    private final JLabel loggedInUserLabel;
+    private final boolean[] isLoggedIn;
+    private final boolean[] isAdmin;
+
+    public LoginPanel(Font largeFont) {
+        super(new FlowLayout(FlowLayout.CENTER));
+        this.isLoggedIn = new boolean[]{false};
+        this.isAdmin = new boolean[]{false};
+
         JLabel userLabel = new JLabel("Benutzer:");
-        JTextField userField = new JTextField(10);
+        userField = new JTextField(10);
         JLabel passLabel = new JLabel("Passwort:");
-        JPasswordField passField = new JPasswordField(10);
+        passField = new JPasswordField(10);
         JButton loginButton = new JButton("Login");
-        JLabel loggedInUserLabel = new JLabel("Nicht eingeloggt"); // Label to display username
+        loggedInUserLabel = new JLabel("Nicht eingeloggt");
 
         userLabel.setFont(largeFont);
         userField.setFont(largeFont);
@@ -45,58 +51,92 @@ public class Main {
         loginButton.setFont(largeFont);
         loggedInUserLabel.setFont(largeFont);
 
-        loginPanel.add(userLabel);
-        loginPanel.add(userField);
-        loginPanel.add(passLabel);
-        loginPanel.add(passField);
-        loginPanel.add(loginButton);
-        loginPanel.add(loggedInUserLabel); // Add the username display label
+        add(userLabel);
+        add(userField);
+        add(passLabel);
+        add(passField);
+        add(loginButton);
+        add(loggedInUserLabel);
 
-        // Create a flag to track login status and role
-        final boolean[] isLoggedIn = {false};
-        final boolean[] isAdmin = {false};
-
-        // Add action listener to the login button
         loginButton.addActionListener(e -> {
             String username = userField.getText();
             String password = new String(passField.getPassword());
             if ("Kassierer".equals(username) && "12345".equals(password)) {
                 loggedInUserLabel.setText("Eingeloggt als: " + username);
-                isLoggedIn[0] = true; // Set login status to true
-                isAdmin[0] = false; // Not admin
+                isLoggedIn[0] = true;
+                isAdmin[0] = false;
             } else if ("Admin".equals(username) && "geheim".equals(password)) {
                 loggedInUserLabel.setText("Eingeloggt als: Admin");
-                isLoggedIn[0] = true; // Set login status to true
-                isAdmin[0] = true; // Admin role
+                isLoggedIn[0] = true;
+                isAdmin[0] = true;
             } else {
                 loggedInUserLabel.setText("Login fehlgeschlagen");
-                isLoggedIn[0] = false; // Set login status to false
-                isAdmin[0] = false; // Not admin
+                isLoggedIn[0] = false;
+                isAdmin[0] = false;
             }
         });
+    }
 
-        // Update button labels with names and prices
+    public boolean[] getIsLoggedIn() {
+        return isLoggedIn;
+    }
+}
+
+class OutputPanel extends JPanel {
+    private final JLabel selectedItemsLabel;
+    private final JLabel outputLabel;
+
+    public OutputPanel(Font largeFont) {
+        super(new BorderLayout());
+        selectedItemsLabel = new JLabel("Auswahl: ", SwingConstants.RIGHT);
+        outputLabel = new JLabel("Gesamt: 0€", SwingConstants.RIGHT);
+        selectedItemsLabel.setFont(largeFont);
+        outputLabel.setFont(largeFont);
+
+        add(selectedItemsLabel, BorderLayout.NORTH);
+        add(outputLabel, BorderLayout.SOUTH);
+    }
+
+    public JLabel getSelectedItemsLabel() {
+        return selectedItemsLabel;
+    }
+
+    public JLabel getOutputLabel() {
+        return outputLabel;
+    }
+}
+
+class ButtonPanel extends JPanel {
+    public ButtonPanel(Font largeFont, JLabel selectedItemsLabel, JLabel outputLabel, boolean[] isLoggedIn) {
+        super(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.insets = new Insets(10, 10, 10, 10);
+
         String[] buttonLabels = {"Cola - 1€", "Wasser - 1€", "Weizen - 1€", "Pils - 1€", "Fanta - 1€"};
+        HashMap<String, Integer> itemCounts = new HashMap<>();
+        HashMap<String, Integer> itemPrices = new HashMap<>();
+
         for (int i = 0; i < buttonLabels.length; i++) {
             String label = buttonLabels[i];
-            JPanel rowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT)); // Row layout
+            JPanel rowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
             JButton mainButton = new JButton(label);
             JButton plusButton = new JButton("+");
             JButton minusButton = new JButton("-");
-            JLabel counterLabel = new JLabel("0"); // Counter label
+            JLabel counterLabel = new JLabel("0");
 
-            // Apply larger font to buttons and labels
             mainButton.setFont(largeFont);
             plusButton.setFont(largeFont);
             minusButton.setFont(largeFont);
             counterLabel.setFont(largeFont);
 
             itemCounts.put(label, 0);
-            itemPrices.put(label, 1); // All items are 1€
+            itemPrices.put(label, 1);
 
-            // Add action listeners for "+" and "-" buttons
             plusButton.addActionListener(e -> {
-                if (isLoggedIn[0]) { // Check login status
+                if (isLoggedIn[0]) {
                     int currentCount = Integer.parseInt(counterLabel.getText());
                     counterLabel.setText(String.valueOf(currentCount + 1));
                     itemCounts.put(label, currentCount + 1);
@@ -105,7 +145,7 @@ public class Main {
                 }
             });
             minusButton.addActionListener(e -> {
-                if (isLoggedIn[0]) { // Check login status
+                if (isLoggedIn[0]) {
                     int currentCount = Integer.parseInt(counterLabel.getText());
                     if (currentCount > 0) {
                         counterLabel.setText(String.valueOf(currentCount - 1));
@@ -119,21 +159,18 @@ public class Main {
             rowPanel.add(mainButton);
             rowPanel.add(plusButton);
             rowPanel.add(minusButton);
-            rowPanel.add(counterLabel); // Add counter label to the row
+            rowPanel.add(counterLabel);
 
-            // Add row panel to button panel with GridBagConstraints
             gbc.gridy = i;
-            buttonPanel.add(rowPanel, gbc);
+            add(rowPanel, gbc);
         }
 
-        // Add a Reset button below the 5 buttons
         JButton resetButton = new JButton("Bezahlen");
         resetButton.setFont(largeFont);
         resetButton.addActionListener(e -> {
-            if (isLoggedIn[0]) { // Check login status
+            if (isLoggedIn[0]) {
                 itemCounts.keySet().forEach(key -> itemCounts.put(key, 0));
-                buttonPanel.getComponents();
-                for (Component component : buttonPanel.getComponents()) {
+                for (Component component : getComponents()) {
                     if (component instanceof JPanel) {
                         JPanel rowPanel = (JPanel) component;
                         for (Component subComponent : rowPanel.getComponents()) {
@@ -148,26 +185,11 @@ public class Main {
             }
         });
 
-        gbc.gridy = buttonLabels.length; // Place Reset button below the last row
-        buttonPanel.add(resetButton, gbc);
-
-        // Create a main panel with BorderLayout
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(loginPanel, BorderLayout.NORTH); // Add login panel at the top
-        mainPanel.add(buttonPanel, BorderLayout.CENTER); // Center the button panel for resizing
-
-        // Add the selected items label and output label
-        JPanel outputPanel = new JPanel(new BorderLayout());
-        outputPanel.add(selectedItemsLabel, BorderLayout.NORTH);
-        outputPanel.add(outputLabel, BorderLayout.SOUTH);
-        mainPanel.add(outputPanel, BorderLayout.SOUTH);
-
-        // Add the main panel to the frame
-        frame.add(mainPanel);
-        frame.setVisible(true);
+        gbc.gridy = buttonLabels.length;
+        add(resetButton, gbc);
     }
 
-    private static void updateSelectedItemsLabel(JLabel label, HashMap<String, Integer> itemCounts) {
+    private void updateSelectedItemsLabel(JLabel label, HashMap<String, Integer> itemCounts) {
         StringBuilder text = new StringBuilder("Auswahl: ");
         itemCounts.forEach((item, count) -> {
             if (count > 0) {
@@ -177,7 +199,7 @@ public class Main {
         label.setText(text.toString().replaceAll(", $", ""));
     }
 
-    private static void updateTotalSum(JLabel label, HashMap<String, Integer> itemCounts, HashMap<String, Integer> itemPrices) {
+    private void updateTotalSum(JLabel label, HashMap<String, Integer> itemCounts, HashMap<String, Integer> itemPrices) {
         int totalSum = 0;
         for (String item : itemCounts.keySet()) {
             totalSum += itemCounts.get(item) * itemPrices.get(item);
