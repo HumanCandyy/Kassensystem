@@ -1,0 +1,4 @@
+Auswertung der bezahlten Artikel:
+4x Bier = 10.0€
+5x Asbach Cola = 22.5€
+Gesamtsumme: 32.5€

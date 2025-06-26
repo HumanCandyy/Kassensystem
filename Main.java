@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import javax.swing.*;
 
@@ -119,14 +120,24 @@ class ButtonPanel extends JPanel {
         gbc.weighty = 1.0;
         gbc.insets = new Insets(10, 10, 10, 10);
 
-        String[] buttonLabels = {"Cola - 1€", "Wasser - 1€", "Weizen - 1€", "Pils - 1€", "Fanta - 1€"};
-        HashMap<String, Integer> itemCounts = new HashMap<>();
-        HashMap<String, Integer> itemPrices = new HashMap<>();
-        HashMap<String, Integer> stats = new HashMap<>(); // Statistik für Auswertung
+        // Neue Artikel-Objekte
+        ArrayList<Article> articles = new ArrayList<>();
+        articles.add(new Bier());
+        articles.add(new AsbachCola());
+        articles.add(new RothausWeizen());
+        articles.add(new WaldhausBier());
+        articles.add(new Wein());
 
-        for (int i = 0; i < buttonLabels.length; i++) {
-            String label = buttonLabels[i];
+        HashMap<Article, Integer> itemCounts = new HashMap<>();
+        HashMap<Article, Integer> stats = new HashMap<>(); // Statistik für Auswertung
+        for (Article article : articles) {
+            itemCounts.put(article, 0);
+        }
+
+        for (int i = 0; i < articles.size(); i++) {
+            Article article = articles.get(i);
             JPanel rowPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            String label = article.getName() + " - " + article.getPrice() + "€";
             JButton mainButton = new JButton(label);
             JButton plusButton = new JButton("+");
             JButton minusButton = new JButton("-");
@@ -137,16 +148,13 @@ class ButtonPanel extends JPanel {
             minusButton.setFont(largeFont);
             counterLabel.setFont(largeFont);
 
-            itemCounts.put(label, 0);
-            itemPrices.put(label, 1);
-
             plusButton.addActionListener(e -> {
                 if (isLoggedIn[0]) {
                     int currentCount = Integer.parseInt(counterLabel.getText());
                     counterLabel.setText(String.valueOf(currentCount + 1));
-                    itemCounts.put(label, currentCount + 1);
+                    itemCounts.put(article, currentCount + 1);
                     updateSelectedItemsLabel(selectedItemsLabel, itemCounts);
-                    updateTotalSum(outputLabel, itemCounts, itemPrices);
+                    updateTotalSum(outputLabel, itemCounts);
                 }
             });
             minusButton.addActionListener(e -> {
@@ -154,9 +162,9 @@ class ButtonPanel extends JPanel {
                     int currentCount = Integer.parseInt(counterLabel.getText());
                     if (currentCount > 0) {
                         counterLabel.setText(String.valueOf(currentCount - 1));
-                        itemCounts.put(label, currentCount - 1);
+                        itemCounts.put(article, currentCount - 1);
                         updateSelectedItemsLabel(selectedItemsLabel, itemCounts);
-                        updateTotalSum(outputLabel, itemCounts, itemPrices);
+                        updateTotalSum(outputLabel, itemCounts);
                     }
                 }
             });
@@ -175,13 +183,13 @@ class ButtonPanel extends JPanel {
         resetButton.addActionListener(e -> {
             if (isLoggedIn[0]) {
                 // Statistik aktualisieren
-                for (String key : itemCounts.keySet()) {
-                    int count = itemCounts.get(key);
+                for (Article article : itemCounts.keySet()) {
+                    int count = itemCounts.get(article);
                     if (count > 0) {
-                        stats.put(key, stats.getOrDefault(key, 0) + count);
+                        stats.put(article, stats.getOrDefault(article, 0) + count);
                     }
                 }
-                itemCounts.keySet().forEach(key -> itemCounts.put(key, 0));
+                itemCounts.keySet().forEach(a -> itemCounts.put(a, 0));
                 for (Component component : getComponents()) {
                     if (component instanceof JPanel) {
                         JPanel rowPanel = (JPanel) component;
@@ -193,17 +201,17 @@ class ButtonPanel extends JPanel {
                     }
                 }
                 updateSelectedItemsLabel(selectedItemsLabel, itemCounts);
-                updateTotalSum(outputLabel, itemCounts, itemPrices);
+                updateTotalSum(outputLabel, itemCounts);
             }
         });
 
-        gbc.gridy = buttonLabels.length;
+        gbc.gridy = articles.size();
         add(resetButton, gbc);
 
         // Auswertung-Button hinzufügen
         JButton auswertungButton = new JButton("Auswertung");
         auswertungButton.setFont(largeFont);
-        gbc.gridy = buttonLabels.length + 1;
+        gbc.gridy = articles.size() + 1;
         add(auswertungButton, gbc);
         auswertungButton.setVisible(isAdmin[0]);
 
@@ -211,12 +219,12 @@ class ButtonPanel extends JPanel {
             if (!isAdmin[0]) return;
             try {
                 java.io.PrintWriter writer = new java.io.PrintWriter("auswertung.txt", "UTF-8");
-                int gesamt = 0;
+                double gesamt = 0;
                 writer.println("Auswertung der bezahlten Artikel:");
-                for (String key : stats.keySet()) {
-                    int count = stats.get(key);
-                    int preis = itemPrices.get(key);
-                    writer.println(count + "x " + key + " = " + (count * preis) + "€");
+                for (Article article : stats.keySet()) {
+                    int count = stats.get(article);
+                    double preis = article.getPrice();
+                    writer.println(count + "x " + article.getName() + " = " + (count * preis) + "€");
                     gesamt += count * preis;
                 }
                 writer.println("Gesamtsumme: " + gesamt + "€");
@@ -232,21 +240,86 @@ class ButtonPanel extends JPanel {
         adminCheckTimer.start();
     }
 
-    private void updateSelectedItemsLabel(JLabel label, HashMap<String, Integer> itemCounts) {
+    private void updateSelectedItemsLabel(JLabel label, HashMap<Article, Integer> itemCounts) {
         StringBuilder text = new StringBuilder("Auswahl: ");
-        itemCounts.forEach((item, count) -> {
+        itemCounts.forEach((article, count) -> {
             if (count > 0) {
-                text.append(count).append("x ").append(item.split(" - ")[0]).append(", ");
+                text.append(count).append("x ").append(article.getName()).append(", ");
             }
         });
         label.setText(text.toString().replaceAll(", $", ""));
     }
 
-    private void updateTotalSum(JLabel label, HashMap<String, Integer> itemCounts, HashMap<String, Integer> itemPrices) {
-        int totalSum = 0;
-        for (String item : itemCounts.keySet()) {
-            totalSum += itemCounts.get(item) * itemPrices.get(item);
+    private void updateTotalSum(JLabel label, HashMap<Article, Integer> itemCounts) {
+        double totalSum = 0;
+        for (Article article : itemCounts.keySet()) {
+            totalSum += itemCounts.get(article) * article.getPrice();
         }
         label.setText("Gesamt: " + totalSum + "€");
+    }
+}
+
+abstract class Article {
+    public abstract String getName();
+    public abstract double getPrice();
+}
+
+class Bier extends Article {
+    @Override
+    public String getName() {
+        return "Bier";
+    }
+
+    @Override
+    public double getPrice() {
+        return 2.5;
+    }
+}
+
+class AsbachCola extends Article {
+    @Override
+    public String getName() {
+        return "AsbachCola";
+    }
+
+    @Override
+    public double getPrice() {
+        return 3.0;
+    }
+}
+
+class RothausWeizen extends Article {
+    @Override
+    public String getName() {
+        return "RothausWeizen";
+    }
+
+    @Override
+    public double getPrice() {
+        return 3.5;
+    }
+}
+
+class WaldhausBier extends Article {
+    @Override
+    public String getName() {
+        return "WaldhausBier";
+    }
+
+    @Override
+    public double getPrice() {
+        return 4.0;
+    }
+}
+
+class Wein extends Article {
+    @Override
+    public String getName() {
+        return "Wein";
+    }
+
+    @Override
+    public double getPrice() {
+        return 5.0;
     }
 }
