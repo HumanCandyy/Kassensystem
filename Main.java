@@ -263,6 +263,8 @@ class ButtonPanel extends JPanel {
         resetButton.setFocusPainted(false);
         resetButton.addActionListener(e -> {
             if (isLoggedIn[0]) {
+                // Beleg an ReceipeManager übergeben
+                ReceipeManager.getInstance().addReceipe(outputPanel.getCurrentReceipe());
                 outputPanel.resetReceipt();
                 updateCounters.run();
             }
@@ -282,28 +284,7 @@ class ButtonPanel extends JPanel {
 
         auswertungButton.addActionListener(e -> {
             if (!isAdmin[0]) return;
-            try {
-                Receipe r = outputPanel.getCurrentReceipe();
-                java.io.PrintWriter writer = new java.io.PrintWriter("auswertung.txt", "UTF-8");
-                writer.println("Auswertung des aktuellen Belegs:");
-                java.util.Map<String, Integer> countMap = new java.util.LinkedHashMap<>();
-                java.util.Map<String, Double> priceMap = new java.util.LinkedHashMap<>();
-                for (Article a : r.getArticleList()) {
-                    countMap.put(a.getName(), countMap.getOrDefault(a.getName(), 0) + 1);
-                    priceMap.put(a.getName(), a.getPrice());
-                }
-                for (String name : countMap.keySet()) {
-                    int count = countMap.get(name);
-                    double price = priceMap.get(name);
-                    writer.println(String.format("%2dx %-15s %6.2f€", count, name, count * price));
-                }
-                writer.println("-----------------------------");
-                writer.println(String.format("Gesamtsumme: %.2f€", r.getTotalPrice()));
-                writer.close();
-                JOptionPane.showMessageDialog(this, "Auswertung wurde in auswertung.txt gespeichert.");
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Fehler beim Schreiben der Auswertung: " + ex.getMessage());
-            }
+            ReceipeManager.getInstance().print();
         });
 
         Timer adminCheckTimer = new Timer(300, e -> auswertungButton.setVisible(isAdmin[0]));
