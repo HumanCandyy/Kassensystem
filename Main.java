@@ -13,7 +13,7 @@ public class Main {
 
         LoginPanel loginPanel = new LoginPanel(largeFont);
         OutputPanel outputPanel = new OutputPanel(largeFont);
-        ButtonPanel buttonPanel = new ButtonPanel(largeFont, outputPanel.getSelectedItemsLabel(), outputPanel.getOutputLabel(), loginPanel.getIsLoggedIn());
+        ButtonPanel buttonPanel = new ButtonPanel(largeFont, outputPanel.getSelectedItemsLabel(), outputPanel.getOutputLabel(), loginPanel.getIsLoggedIn(), loginPanel.getIsAdmin());
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.add(loginPanel, BorderLayout.NORTH);
@@ -80,6 +80,10 @@ class LoginPanel extends JPanel {
     public boolean[] getIsLoggedIn() {
         return isLoggedIn;
     }
+
+    public boolean[] getIsAdmin() {
+        return isAdmin;
+    }
 }
 
 class OutputPanel extends JPanel {
@@ -107,7 +111,7 @@ class OutputPanel extends JPanel {
 }
 
 class ButtonPanel extends JPanel {
-    public ButtonPanel(Font largeFont, JLabel selectedItemsLabel, JLabel outputLabel, boolean[] isLoggedIn) {
+    public ButtonPanel(Font largeFont, JLabel selectedItemsLabel, JLabel outputLabel, boolean[] isLoggedIn, boolean[] isAdmin) {
         super(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
@@ -118,6 +122,7 @@ class ButtonPanel extends JPanel {
         String[] buttonLabels = {"Cola - 1€", "Wasser - 1€", "Weizen - 1€", "Pils - 1€", "Fanta - 1€"};
         HashMap<String, Integer> itemCounts = new HashMap<>();
         HashMap<String, Integer> itemPrices = new HashMap<>();
+        HashMap<String, Integer> stats = new HashMap<>(); // Statistik für Auswertung
 
         for (int i = 0; i < buttonLabels.length; i++) {
             String label = buttonLabels[i];
@@ -169,6 +174,13 @@ class ButtonPanel extends JPanel {
         resetButton.setFont(largeFont);
         resetButton.addActionListener(e -> {
             if (isLoggedIn[0]) {
+                // Statistik aktualisieren
+                for (String key : itemCounts.keySet()) {
+                    int count = itemCounts.get(key);
+                    if (count > 0) {
+                        stats.put(key, stats.getOrDefault(key, 0) + count);
+                    }
+                }
                 itemCounts.keySet().forEach(key -> itemCounts.put(key, 0));
                 for (Component component : getComponents()) {
                     if (component instanceof JPanel) {
@@ -187,6 +199,37 @@ class ButtonPanel extends JPanel {
 
         gbc.gridy = buttonLabels.length;
         add(resetButton, gbc);
+
+        // Auswertung-Button hinzufügen
+        JButton auswertungButton = new JButton("Auswertung");
+        auswertungButton.setFont(largeFont);
+        gbc.gridy = buttonLabels.length + 1;
+        add(auswertungButton, gbc);
+        auswertungButton.setVisible(isAdmin[0]);
+
+        auswertungButton.addActionListener(e -> {
+            if (!isAdmin[0]) return;
+            try {
+                java.io.PrintWriter writer = new java.io.PrintWriter("auswertung.txt", "UTF-8");
+                int gesamt = 0;
+                writer.println("Auswertung der bezahlten Artikel:");
+                for (String key : stats.keySet()) {
+                    int count = stats.get(key);
+                    int preis = itemPrices.get(key);
+                    writer.println(count + "x " + key + " = " + (count * preis) + "€");
+                    gesamt += count * preis;
+                }
+                writer.println("Gesamtsumme: " + gesamt + "€");
+                writer.close();
+                JOptionPane.showMessageDialog(this, "Auswertung wurde in auswertung.txt gespeichert.");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Fehler beim Schreiben der Auswertung: " + ex.getMessage());
+            }
+        });
+
+        // Sichtbarkeit bei Login-Status-Änderung aktualisieren
+        Timer adminCheckTimer = new Timer(300, e -> auswertungButton.setVisible(isAdmin[0]));
+        adminCheckTimer.start();
     }
 
     private void updateSelectedItemsLabel(JLabel label, HashMap<String, Integer> itemCounts) {
