@@ -23,6 +23,14 @@ public class Receipe {
         this.totalPrice = 0.0;
     }
 
+    public Receipe(String cashier) {
+        this.ID = nextID++;
+        this.dateTime = LocalDateTime.now();
+        this.articleList = new ArrayList<>();
+        this.totalPrice = 0.0;
+        this.cashier = cashier;
+    }
+
     // Getter only, no public setter for ID to keep it unique
     public int getID() {
         return ID;

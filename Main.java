@@ -18,7 +18,8 @@ public class Main {
 
         LoginPanel loginPanel = new LoginPanel(largeFont, textFont);
         OutputPanel outputPanel = new OutputPanel(largeFont);
-        ButtonPanel buttonPanel = new ButtonPanel(buttonFont, outputPanel, loginPanel.getIsLoggedIn(), loginPanel.getIsAdmin());
+        loginPanel.setOutputPanel(outputPanel);
+        ButtonPanel buttonPanel = new ButtonPanel(buttonFont, outputPanel, loginPanel, loginPanel.getIsLoggedIn(), loginPanel.getIsAdmin());
 
         // Container für Beleg und Bedienfeld (vertikal gestapelt, volle Breite)
         JPanel centerPanel = new JPanel();
@@ -48,6 +49,13 @@ class LoginPanel extends JPanel {
     private final JLabel loggedInUserLabel;
     private final boolean[] isLoggedIn;
     private final boolean[] isAdmin;
+    private OutputPanel outputPanel;
+    private final String[][] users = {
+        {"Kassierer1", "12345"},
+        {"Kassierer2", "12345"},
+        {"Kassierer3", "12345"},
+        {"Admin", "geheim"}
+    };
 
     public LoginPanel(Font labelFont, Font textFont) {
         super(new FlowLayout(FlowLayout.CENTER, 20, 10));
@@ -80,20 +88,35 @@ class LoginPanel extends JPanel {
         loginButton.addActionListener(e -> {
             String username = userField.getText();
             String password = new String(passField.getPassword());
-            if ("Kassierer".equals(username) && "12345".equals(password)) {
-                loggedInUserLabel.setText("Eingeloggt als: " + username);
-                isLoggedIn[0] = true;
-                isAdmin[0] = false;
-            } else if ("Admin".equals(username) && "geheim".equals(password)) {
-                loggedInUserLabel.setText("Eingeloggt als: Admin");
-                isLoggedIn[0] = true;
-                isAdmin[0] = true;
-            } else {
+            boolean found = false;
+            for (String[] user : users) {
+                if (user[0].equals(username) && user[1].equals(password)) {
+                    found = true;
+                    if ("Admin".equals(username)) {
+                        loggedInUserLabel.setText("Eingeloggt als: Admin");
+                        isLoggedIn[0] = true;
+                        isAdmin[0] = true;
+                    } else {
+                        loggedInUserLabel.setText("Eingeloggt als: " + username);
+                        isLoggedIn[0] = true;
+                        isAdmin[0] = false;
+                    }
+                    if (outputPanel != null) {
+                        outputPanel.setCashier(username);
+                    }
+                    break;
+                }
+            }
+            if (!found) {
                 loggedInUserLabel.setText("Login fehlgeschlagen");
                 isLoggedIn[0] = false;
                 isAdmin[0] = false;
             }
         });
+    }
+
+    public void setOutputPanel(OutputPanel outputPanel) {
+        this.outputPanel = outputPanel;
     }
 
     public boolean[] getIsLoggedIn() {
@@ -102,6 +125,11 @@ class LoginPanel extends JPanel {
 
     public boolean[] getIsAdmin() {
         return isAdmin;
+    }
+
+    // Hilfsmethode, um aktuellen User zu bekommen
+    public String getCurrentUser() {
+        return userField.getText();
     }
 }
 
@@ -144,14 +172,37 @@ class OutputPanel extends JPanel {
     }
 
     public void resetReceipt() {
-        currentReceipe = new Receipe();
+        // Kassierer aus LoginPanel holen
+        String cashier = null;
+        Window w = SwingUtilities.getWindowAncestor(this);
+        if (w instanceof JFrame) {
+            JFrame frame = (JFrame) w;
+            for (Component c : frame.getContentPane().getComponents()) {
+                if (c instanceof JPanel) {
+                    for (Component sub : ((JPanel) c).getComponents()) {
+                        if (sub instanceof LoginPanel) {
+                            cashier = ((LoginPanel) sub).getCurrentUser();
+                        }
+                    }
+                }
+            }
+        }
+        currentReceipe = new Receipe(cashier);
         updateReceipt();
+    }
+
+    public void setCashier(String cashier) {
+        if (currentReceipe != null) {
+            currentReceipe.setCashier(cashier);
+            updateReceipt();
+        }
     }
 
     private void updateReceipt() {
         StringBuilder sb = new StringBuilder();
         sb.append("Beleg Nr. ").append(currentReceipe.getID()).append("\n");
         sb.append(currentReceipe.getDateTime().toLocalDate()).append(" ").append(currentReceipe.getDateTime().toLocalTime().withNano(0)).append("\n");
+        sb.append("Kassierer: ").append(currentReceipe.getCashier() != null ? currentReceipe.getCashier() : "-").append("\n");
         sb.append("-----------------------------\n");
         // Artikel zusammenfassen
         java.util.Map<String, Integer> countMap = new java.util.LinkedHashMap<>();
@@ -172,8 +223,10 @@ class OutputPanel extends JPanel {
 }
 
 class ButtonPanel extends JPanel {
-    public ButtonPanel(Font buttonFont, OutputPanel outputPanel, boolean[] isLoggedIn, boolean[] isAdmin) {
+    private final LoginPanel loginPanel;
+    public ButtonPanel(Font buttonFont, OutputPanel outputPanel, LoginPanel loginPanel, boolean[] isLoggedIn, boolean[] isAdmin) {
         super(new GridBagLayout());
+        this.loginPanel = loginPanel;
         setBackground(new Color(240, 248, 255));
         setBorder(BorderFactory.createTitledBorder("Kasse"));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -263,14 +316,14 @@ class ButtonPanel extends JPanel {
         resetButton.setFocusPainted(false);
         resetButton.addActionListener(e -> {
             if (isLoggedIn[0]) {
-                // Beleg an ReceipeManager übergeben
+                // Kassierer direkt aus LoginPanel holen
+                String cashier = loginPanel.getCurrentUser();
+                outputPanel.getCurrentReceipe().setCashier(cashier);
                 ReceipeManager.getInstance().addReceipe(outputPanel.getCurrentReceipe());
                 outputPanel.resetReceipt();
                 updateCounters.run();
             }
         });
-
-        gbc.gridy = articles.size();
         add(resetButton, gbc);
 
         JButton auswertungButton = new JButton("Auswertung");
@@ -278,17 +331,20 @@ class ButtonPanel extends JPanel {
         auswertungButton.setPreferredSize(new Dimension(180, 45));
         auswertungButton.setBackground(new Color(255, 255, 200));
         auswertungButton.setFocusPainted(false);
-        gbc.gridy = articles.size() + 1;
+        gbc.gridy = articles.size();
         add(auswertungButton, gbc);
+        gbc.gridy = articles.size() + 1;
+        add(resetButton, gbc);
         auswertungButton.setVisible(isAdmin[0]);
+
+        // Sichtbarkeit immer aktualisieren, wenn sich der Login-Status ändert
+        Timer adminCheckTimer = new Timer(300, e -> auswertungButton.setVisible(isAdmin[0]));
+        adminCheckTimer.start();
 
         auswertungButton.addActionListener(e -> {
             if (!isAdmin[0]) return;
             ReceipeManager.getInstance().print();
         });
-
-        Timer adminCheckTimer = new Timer(300, e -> auswertungButton.setVisible(isAdmin[0]));
-        adminCheckTimer.start();
     }
 }
 
