@@ -316,12 +316,15 @@ class ButtonPanel extends JPanel {
         resetButton.setFocusPainted(false);
         resetButton.addActionListener(e -> {
             if (isLoggedIn[0]) {
+                int result = JOptionPane.showConfirmDialog(this, "Möchten Sie den Beleg wirklich abschließen und bezahlen?", "Bezahlen bestätigen", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                if (result != JOptionPane.YES_OPTION) return;
                 // Kassierer direkt aus LoginPanel holen
                 String cashier = loginPanel.getCurrentUser();
                 outputPanel.getCurrentReceipe().setCashier(cashier);
                 ReceipeManager.getInstance().addReceipe(outputPanel.getCurrentReceipe());
                 outputPanel.resetReceipt();
                 updateCounters.run();
+                JOptionPane.showMessageDialog(this, "Beleg wurde erfolgreich bezahlt und gespeichert!", "Bezahlung abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
             }
         });
         add(resetButton, gbc);
