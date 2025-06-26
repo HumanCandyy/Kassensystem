@@ -30,13 +30,13 @@ public class ReceipeManager {
     }
 
     public void print() {
-        String filePath = null;
+        String filePath;
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Exportiere Abrechnung als TXT");
         fileChooser.setFileFilter(new FileNameExtensionFilter("Textdateien (*.txt)", "txt"));
 
         // Automatisch vorgeschlagener Dateiname mit aktuellem Datum und Uhrzeit
-        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm"));
         String defaultFileName = "Abrechnung_" + dateStr + ".txt";
         fileChooser.setSelectedFile(new java.io.File(defaultFileName));
 
@@ -77,7 +77,7 @@ public class ReceipeManager {
             writer.write("Gesamtsumme: " + String.format("%.2f", totalSum) + " EUR");
             writer.newLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(null, "Fehler beim Exportieren der Abrechnung:\n" + e.getMessage(), "Fehler", javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }
 }
