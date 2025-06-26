@@ -36,7 +36,7 @@ public class ReceipeManager {
         fileChooser.setFileFilter(new FileNameExtensionFilter("Textdateien (*.txt)", "txt"));
 
         // Automatisch vorgeschlagener Dateiname mit aktuellem Datum und Uhrzeit
-        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm"));
+        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String defaultFileName = "Abrechnung_" + dateStr + ".txt";
         fileChooser.setSelectedFile(new java.io.File(defaultFileName));
 
@@ -62,7 +62,8 @@ public class ReceipeManager {
                 writer.newLine();
                 writer.write("Artikel:");
                 writer.newLine();
-                for (Article article : receipe.getArticleList()) {
+                for (Object obj : receipe.getArticleList()) {
+                    Article article = (Article) obj;
                     writer.write(" - " + article.getName() + ": " + String.format("%.2f", article.getPrice()) + " EUR");
                     writer.newLine();
                 }
