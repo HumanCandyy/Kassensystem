@@ -133,7 +133,7 @@ class LoginPanel extends JPanel {
     }
 }
 
-class OutputPanel extends JPanel {
+class OutputPanel extends JPanel implements ReceipeObserver {
     private final JTextArea receiptArea;
     private Receipe currentReceipe;
 
@@ -159,6 +159,7 @@ class OutputPanel extends JPanel {
         scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 350));
         add(scrollPane, BorderLayout.CENTER);
         currentReceipe = new Receipe();
+        currentReceipe.addObserver(this);
         updateReceipt();
     }
 
@@ -167,8 +168,9 @@ class OutputPanel extends JPanel {
     }
 
     public void addArticleToReceipt(Article article) {
-        currentReceipe.addArticle(article);
-        updateReceipt();
+        if (currentReceipe != null) {
+            currentReceipe.addArticle(article);
+        }
     }
 
     public void resetReceipt() {
@@ -187,15 +189,23 @@ class OutputPanel extends JPanel {
                 }
             }
         }
+        if (currentReceipe != null) {
+            currentReceipe.removeObserver(this);
+        }
         currentReceipe = new Receipe(cashier);
+        currentReceipe.addObserver(this);
         updateReceipt();
     }
 
     public void setCashier(String cashier) {
         if (currentReceipe != null) {
             currentReceipe.setCashier(cashier);
-            updateReceipt();
         }
+    }
+
+    @Override
+    public void onReceipeChanged(Receipe receipe) {
+        updateReceipt();
     }
 
     private void updateReceipt() {
@@ -222,11 +232,15 @@ class OutputPanel extends JPanel {
     }
 }
 
-class ButtonPanel extends JPanel {
+class ButtonPanel extends JPanel implements ReceipeObserver {
     private final LoginPanel loginPanel;
+    private OutputPanel outputPanel;
+    private Receipe observedReceipe;
+    private Runnable updateCounters;
     public ButtonPanel(Font buttonFont, OutputPanel outputPanel, LoginPanel loginPanel, boolean[] isLoggedIn, boolean[] isAdmin) {
         super(new GridBagLayout());
         this.loginPanel = loginPanel;
+        this.outputPanel = outputPanel;
         setBackground(new Color(240, 248, 255));
         setBorder(BorderFactory.createTitledBorder("Kasse"));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -245,7 +259,7 @@ class ButtonPanel extends JPanel {
         // Counter-Labels für alle Artikel speichern
         java.util.Map<String, JLabel> counterLabels = new java.util.HashMap<>();
         // Methode zum Aktualisieren aller Counter
-        Runnable updateCounters = () -> {
+        updateCounters = () -> {
             java.util.Map<String, Integer> countMap = new java.util.HashMap<>();
             for (Article a : outputPanel.getCurrentReceipe().getArticleList()) {
                 countMap.put(a.getName(), countMap.getOrDefault(a.getName(), 0) + 1);
@@ -294,19 +308,21 @@ class ButtonPanel extends JPanel {
             plusButton.addActionListener(e -> {
                 if (isLoggedIn[0]) {
                     outputPanel.addArticleToReceipt(article);
-                    updateCounters.run();
                 }
             });
             minusButton.addActionListener(e -> {
                 if (isLoggedIn[0]) {
                     outputPanel.getCurrentReceipe().removeArticle(article);
                     outputPanel.addArticleToReceipt(null); // update
-                    updateCounters.run();
                 }
             });
         }
 
-        // Initial einmal aufrufen
+        // Observer-Registrierung
+        observedReceipe = outputPanel.getCurrentReceipe();
+        if (observedReceipe != null) {
+            observedReceipe.addObserver(this);
+        }
         updateCounters.run();
 
         JButton resetButton = new JButton("Bezahlen");
@@ -322,7 +338,10 @@ class ButtonPanel extends JPanel {
                 String cashier = loginPanel.getCurrentUser();
                 outputPanel.getCurrentReceipe().setCashier(cashier);
                 ReceipeManager.getInstance().addReceipe(outputPanel.getCurrentReceipe());
+                if (observedReceipe != null) observedReceipe.removeObserver(this);
                 outputPanel.resetReceipt();
+                observedReceipe = outputPanel.getCurrentReceipe();
+                if (observedReceipe != null) observedReceipe.addObserver(this);
                 updateCounters.run();
                 JOptionPane.showMessageDialog(this, "Beleg wurde erfolgreich bezahlt und gespeichert!", "Bezahlung abgeschlossen", JOptionPane.INFORMATION_MESSAGE);
             }
@@ -348,6 +367,11 @@ class ButtonPanel extends JPanel {
             if (!isAdmin[0]) return;
             ReceipeManager.getInstance().print();
         });
+    }
+
+    @Override
+    public void onReceipeChanged(Receipe receipe) {
+        updateCounters.run();
     }
 }
 

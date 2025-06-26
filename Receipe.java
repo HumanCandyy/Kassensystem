@@ -5,6 +5,7 @@
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Receipe {
     private static int nextID = 1; // static counter for unique IDs
@@ -14,6 +15,8 @@ public class Receipe {
     private final int ID;
     private List<Article> articleList;
     private double totalPrice;
+
+    private final List<ReceipeObserver> observers = new CopyOnWriteArrayList<>();
 
     // Constructor increments ID automatically, no need for public setter
     public Receipe() {
@@ -47,6 +50,7 @@ public class Receipe {
 
     public void setCashier(String cashier) {
         this.cashier = cashier;
+        notifyObservers();
     }
 
     public List<Article> getArticleList() {
@@ -55,6 +59,7 @@ public class Receipe {
 
     public void setArticleList(List<Article> articleList) {
         this.articleList = articleList;
+        notifyObservers();
     }
 
     public double getTotalPrice() {
@@ -65,11 +70,26 @@ public class Receipe {
         this.totalPrice = totalPrice;
     }
 
+    public void addObserver(ReceipeObserver observer) {
+        observers.add(observer);
+    }
+
+    public void removeObserver(ReceipeObserver observer) {
+        observers.remove(observer);
+    }
+
+    private void notifyObservers() {
+        for (ReceipeObserver observer : observers) {
+            observer.onReceipeChanged(this);
+        }
+    }
+
     // Fügt einen Artikel hinzu und addiert dessen Preis zu totalPrice
     public void addArticle(Article article) {
         if (article != null) {
             articleList.add(article);
             totalPrice += article.getPrice();
+            notifyObservers();
         }
     }
 
@@ -77,6 +97,7 @@ public class Receipe {
     public void removeArticle(Article article) {
         if (article != null && articleList.remove(article)) {
             totalPrice -= article.getPrice();
+            notifyObservers();
         }
     }
 }
