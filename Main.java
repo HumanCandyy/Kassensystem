@@ -4,7 +4,7 @@ import javax.swing.*;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hallo Ubuntu!");
+        System.out.println("Hallo Welt!");
         JFrame frame = new JFrame("Einfaches Fenster");
         frame.setSize(600, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

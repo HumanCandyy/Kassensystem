@@ -1,3 +1,6 @@
 Auswertung der bezahlten Artikel:
-5x Wasser - 1€ = 5€
-Gesamtsumme: 5€
+4x Wasser - 1€ = 4€
+5x Weizen - 1€ = 5€
+9x Cola - 1€ = 9€
+5x Pils - 1€ = 5€
+Gesamtsumme: 23€
