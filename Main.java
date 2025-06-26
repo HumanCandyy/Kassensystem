@@ -1,6 +1,6 @@
-import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
+import javax.swing.*;
 
 public class Main {
     public static void main(String[] args) {
@@ -250,4 +250,3 @@ class ButtonPanel extends JPanel {
         label.setText("Gesamt: " + totalSum + "€");
     }
 }
-
