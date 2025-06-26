@@ -7,23 +7,22 @@
  *
  * @author felixbaechle
  */
-public class Article {
-    private String name;
-    private double price;
+public abstract class Article {
+    protected String name;
+    protected double price;
 
-    // Getter and Setter
-    public String getName() {
-        return name;
+    public Article(String name, double price) {
+        this.name = name;
+        this.price = price;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public String getName() {
+        return name;
     }
 
     public double getPrice() {
         return price;
     }
-
     public void setPrice(double price) {
         this.price = price;
     }
